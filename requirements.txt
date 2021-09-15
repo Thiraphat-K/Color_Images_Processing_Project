@@ -3,3 +3,7 @@ matplotlib
 numpy
 opencv-python
 scikit-image
+pandas
+urllib
+collections
+csv

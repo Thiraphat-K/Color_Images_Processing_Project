@@ -1,5 +1,5 @@
-import urllib
-import PIL
+import xlsxwriter
+from csv import DictWriter
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,13 +11,13 @@ import os
 import collections
 import pandas as pd
 import asyncio
+from until import constant
 
 def RGB2HEX(color):
     return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
 
-def get_image(url):
-    resp = urllib.request.urlopen(url)
-    image = np.asarray(bytearray(resp.read()), dtype="uint8")
+def get_image(img):
+    image = np.asarray(bytearray(img.read()), dtype="uint8")
     image = cv2.imdecode(image, cv2.IMREAD_COLOR)
     imageRGB = cv2.cvtColor(image , cv2.COLOR_BGR2RGB)
     return imageRGB
@@ -33,10 +33,8 @@ def center_crop(img, dim):
 	return crop_img
 
 def get_colors(image, number_of_colors):
-    
-    modi_img = center_crop(image, (270, 170, 165, 186))
-    modified_image = modi_img.reshape(modi_img.shape[0]*modi_img.shape[1], 3)
-
+    modi_img = center_crop(image, (270, 175, 165, 186))
+    modified_image = modi_img.reshape(modi_img.shape[0]*modi_img.shape[1], modi_img.shape[2]) #reshape 2D matrix to 3D matrix
     clf = KMeans(n_clusters = number_of_colors)
     labels = clf.fit_predict(modified_image)
     counts_df = Counter(labels)
@@ -49,39 +47,58 @@ def get_colors(image, number_of_colors):
     # rgb_colors = [ordered_colors[i] for i in counts]
     return list(map(lambda h, c: {"Color":h , "Count":c }, hex_colors , counts.values())), modi_img
 
-def saveData(color_data):
-    df = pd.DataFrame(color_data, columns = ['Color', 'Count'])
-    df.to_excel(r'./data/temperature.xlsx', header=True)
+def saveData(date,color_data):
+    color_data[0]["Date"] = date
+    file_path = './data/temperature.xlsx'
+    with xlsxwriter.Workbook(file_path) as workbook:
+        worksheet = workbook.add_worksheet()
+        worksheet.write_row(row=0, col=0, data=constant.headers.values())
+        header_keys = list(constant.headers.keys())
+        for index, item in enumerate(color_data):
+            row = map(lambda field_id: item.get(field_id, ''), header_keys)
+            worksheet.write_row(row=index + 1, col=0, data=row)
 
-def plotGraph(colors, counts):
+def plotGraph(image,colors, counts):
     f, ax = plt.subplots(1, 2, figsize = (8, 6))
-    ax[0].imshow(modi_img)
+    ax[0].imshow(image)
     ax[1].pie(counts, labels = counts, colors = colors)
     ax[0].axis('off') #hide the axis
     ax[1].axis('off')
     f.tight_layout()
-    plt.show()
+    # plt.show()
 
-def call_images():
-    url_img = "http://tiwrmdev.hii.or.th/ContourImg/2021/09/10/hatempY2021M09D10T14.png"
-    print("downloading : %s success!!" % url_img)
-    return url_img
+async def get_data():
+    for y in constant.YEAR:
+        for m in constant.MONTH:
+            for d in constant.DAY:
+                for t in constant.TIME:
+                    try:
+                        url_img = f"http://tiwrmdev.hii.or.th/ContourImg/{y}/{m}/{d}/hatempY{y}M{m}D{d}T{t}.png"
+                        response = urllib.request.urlopen(url_img)
+                        print("downloading : %s success!!" % url_img)
+                        image = get_image(response)
+                        colors, modi_img = get_colors(image, 8)
+                        colors = deleteItem(colors)
+                        print(f"Color : {getValueFromKey(colors,'Color')}\nCount : {getValueFromKey(colors,'Count')}")
+                        print("sum =",sum(getValueFromKey(colors,'Count')))
+                        date = f'{y}-{m}-{d}-{t}'
+                        save_data = saveData(date,colors)
+                    except:
+                        print("------------------ next ------------------")
+    plotGraph(modi_img,getValueFromKey(colors,'Color'),getValueFromKey(colors,'Count'))
 
 def getValueFromKey(array , key): return [i[key] for i in array if key in i]
 
 def deleteItem(colors_l):
+    colors_l = sorted(colors_l, key=lambda k:k['Count'])
     del_I = lambda c : c ['Color'] in ['#fefefe','#000000']
     for i in range(len(colors_l)):
-        if del_I(colors[i]):
-            colors.pop(i)
-    return colors
+        if del_I(colors_l[i]):
+            colors_l.pop(i)
+    return colors_l
+
+async def main():
+    await get_data()
 
 if __name__ == "__main__":
-    image = get_image(call_images())
-    colors, modi_img = get_colors(image, 8)
-    colors = sorted(colors, key=lambda k:k['Count'])
-    colors = deleteItem(colors)
-    # save_data = saveData(colors)
-    # print(f"Color : {getValueFromKey(colors,'Color')}\nCount : {getValueFromKey(colors,'Count')}")
-    print("sum =",sum(getValueFromKey(colors,'Count')))
-    plotGraph(getValueFromKey(colors,'Color'),getValueFromKey(colors,'Count'))
+    asyncio.run(main())
