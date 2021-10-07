@@ -7,3 +7,6 @@ pandas
 urllib
 collections
 csv
+xlsxwriter
+asyncio
+openpyxl

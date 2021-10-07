@@ -1,5 +1,5 @@
-import xlsxwriter
 from csv import DictWriter
+from skimage import color
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,6 +12,7 @@ import collections
 import pandas as pd
 import asyncio
 from until import constant
+from openpyxl import load_workbook
 
 def RGB2HEX(color):
     return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
@@ -49,14 +50,13 @@ def get_colors(image, number_of_colors):
 
 def saveData(date,color_data):
     color_data[0]["Date"] = date
-    file_path = './data/temperature.xlsx'
-    with xlsxwriter.Workbook(file_path) as workbook:
-        worksheet = workbook.add_worksheet()
-        worksheet.write_row(row=0, col=0, data=constant.headers.values())
-        header_keys = list(constant.headers.keys())
-        for index, item in enumerate(color_data):
-            row = map(lambda field_id: item.get(field_id, ''), header_keys)
-            worksheet.write_row(row=index + 1, col=0, data=row)
+    wb = load_workbook('./data/temperature.xlsx')
+    ws = wb.worksheets[0]
+    data = []
+    for i in range(len(color_data)): data.append(list(color_data[i].values()))
+    for d in data:
+        ws.append(d)
+        wb.save('./data/temperature.xlsx')
 
 def plotGraph(image,colors, counts):
     f, ax = plt.subplots(1, 2, figsize = (8, 6))
@@ -82,7 +82,7 @@ async def get_data():
                         print(f"Color : {getValueFromKey(colors,'Color')}\nCount : {getValueFromKey(colors,'Count')}")
                         print("sum =",sum(getValueFromKey(colors,'Count')))
                         date = f'{y}-{m}-{d}-{t}'
-                        save_data = saveData(date,colors)
+                        saveData(date,colors)
                     except:
                         print("------------------ next ------------------")
     plotGraph(modi_img,getValueFromKey(colors,'Color'),getValueFromKey(colors,'Count'))
