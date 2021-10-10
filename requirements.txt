@@ -4,7 +4,7 @@ numpy
 opencv-python
 scikit-image
 pandas
-urllib
+urllib3==1.26.3
 collections
 csv
 xlsxwriter

@@ -1,4 +1,5 @@
 from csv import DictWriter
+from numpy.lib.function_base import percentile
 from skimage import color
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
@@ -49,14 +50,23 @@ def get_colors(image, number_of_colors):
     return list(map(lambda h, c: {"Color":h , "Count":c }, hex_colors , counts.values())), modi_img
 
 def saveData(date,color_data):
-    color_data[0]["Date"] = date
-    wb = load_workbook('./data/temperature.xlsx')
+    color_data[-1]["Date"] = date
+    wb = load_workbook('./data/temperature_2016.xlsx')
     ws = wb.worksheets[0]
+    count_colors = 0
     data = []
-    for i in range(len(color_data)): data.append(list(color_data[i].values()))
+    for i in range(len(color_data)):
+        remove_color = False
+        for c in constant.rm_color:
+            if color_data[i]["Color"].find(c) != -1: remove_color = True
+        if not remove_color:
+            data.append(list(color_data[i].values()))
+    for n in data: count_colors += n[1]
     for d in data:
-        ws.append(d)
-        wb.save('./data/temperature.xlsx')
+            percent = f'{(d[1]/count_colors)*100:.0f}' #find percentage
+            d[1] = int(percent)
+            ws.append(d)
+            wb.save('./data/temperature_2016.xlsx')
 
 def plotGraph(image,colors, counts):
     f, ax = plt.subplots(1, 2, figsize = (8, 6))
@@ -75,17 +85,18 @@ async def get_data():
                     try:
                         url_img = f"http://tiwrmdev.hii.or.th/ContourImg/{y}/{m}/{d}/hatempY{y}M{m}D{d}T{t}.png"
                         response = urllib.request.urlopen(url_img)
-                        print("downloading : %s success!!" % url_img)
+                        # print("downloading : %s success!!" % url_img)
                         image = get_image(response)
                         colors, modi_img = get_colors(image, 8)
                         colors = deleteItem(colors)
-                        print(f"Color : {getValueFromKey(colors,'Color')}\nCount : {getValueFromKey(colors,'Count')}")
-                        print("sum =",sum(getValueFromKey(colors,'Count')))
+                        # print(f"Color : {getValueFromKey(colors,'Color')} | Count : {getValueFromKey(colors,'Count')}")
+                        # print("sum =",sum(getValueFromKey(colors,'Count')))
                         date = f'{y}-{m}-{d}-{t}'
                         saveData(date,colors)
+                        print(f'{date} success!!')
                     except:
-                        print("------------------ next ------------------")
-    plotGraph(modi_img,getValueFromKey(colors,'Color'),getValueFromKey(colors,'Count'))
+                        print("-------- failed --------")
+    # plotGraph(modi_img,getValueFromKey(colors,'Color'),getValueFromKey(colors,'Count'))
 
 def getValueFromKey(array , key): return [i[key] for i in array if key in i]
 
