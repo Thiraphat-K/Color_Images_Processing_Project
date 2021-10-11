@@ -50,23 +50,26 @@ def get_colors(image, number_of_colors):
     return list(map(lambda h, c: {"Color":h , "Count":c }, hex_colors , counts.values())), modi_img
 
 def saveData(date,color_data):
-    color_data[-1]["Date"] = date
-    wb = load_workbook('./data/temperature_2016.xlsx')
-    ws = wb.worksheets[0]
-    count_colors = 0
-    data = []
-    for i in range(len(color_data)):
-        remove_color = False
-        for c in constant.rm_color:
-            if color_data[i]["Color"].find(c) != -1: remove_color = True
-        if not remove_color:
-            data.append(list(color_data[i].values()))
-    for n in data: count_colors += n[1]
-    for d in data:
-            percent = f'{(d[1]/count_colors)*100:.0f}' #find percentage
-            d[1] = int(percent)
-            ws.append(d)
-            wb.save('./data/temperature_2016.xlsx')
+    try:
+        color_data[-1]["Date"] = date
+        count_colors = 0
+        data = []
+        wb = load_workbook('./data/temperature_2018.xlsx')
+        ws = wb.worksheets[11]
+        for i in range(len(color_data)):
+            remove_color = False
+            for c in constant.rm_color:
+                if color_data[i]["Color"].find(c) != -1: remove_color = True
+            if not remove_color: data.append(list(color_data[i].values()))
+        for n in data:count_colors += n[1]
+        if data[-1][2] == date :
+            for d in data:
+                percent = f'{(d[1]/count_colors)*100:.0f}' #find percentage
+                d[1] = int(percent)
+                ws.append(d)
+                wb.save('./data/temperature_2018.xlsx')
+            print(f'{date} success!!')
+    except: print(f'{date} failed~~')
 
 def plotGraph(image,colors, counts):
     f, ax = plt.subplots(1, 2, figsize = (8, 6))
@@ -93,16 +96,16 @@ async def get_data():
                         # print("sum =",sum(getValueFromKey(colors,'Count')))
                         date = f'{y}-{m}-{d}-{t}'
                         saveData(date,colors)
-                        print(f'{date} success!!')
                     except:
-                        print("-------- failed --------")
+                        date_error = f'{y}-{m}-{d}-{t}'
+                        print(f'error: {date_error}')
     # plotGraph(modi_img,getValueFromKey(colors,'Color'),getValueFromKey(colors,'Count'))
 
 def getValueFromKey(array , key): return [i[key] for i in array if key in i]
 
 def deleteItem(colors_l):
     colors_l = sorted(colors_l, key=lambda k:k['Count'])
-    del_I = lambda c : c ['Color'] in ['#fefefe','#000000']
+    del_I = lambda c : c ['Color'] in ['#fefefe']
     for i in range(len(colors_l)):
         if del_I(colors_l[i]):
             colors_l.pop(i)
