@@ -49,13 +49,11 @@ def get_colors(image, number_of_colors):
     # rgb_colors = [ordered_colors[i] for i in counts]
     return list(map(lambda h, c: {"Color":h , "Count":c }, hex_colors , counts.values())), modi_img
 
-def saveData(date,color_data):
+def color_of_temp(date,color_data):
     try:
         color_data[-1]["Date"] = date
         count_colors = 0
         data = []
-        wb = load_workbook('./data/temperature_2018.xlsx')
-        ws = wb.worksheets[11]
         for i in range(len(color_data)):
             remove_color = False
             for c in constant.rm_color:
@@ -66,12 +64,66 @@ def saveData(date,color_data):
             for d in data:
                 percent = f'{(d[1]/count_colors)*100:.0f}' #find percentage
                 d[1] = int(percent)
-                ws.append(d)
-                wb.save('./data/temperature_2018.xlsx')
-            print(f'{date} success!!')
-    except: print(f'{date} failed~~')
+        data_c = combine_hex_color(data)
+        data.clear()
+        data.append(date)
+        data.append(data_c)
+        return data
+    except: print(f'calculate_Temp failed~~')
 
-def plotGraph(image,colors, counts):
+def combine_hex_color(data):
+    try:
+        data_count = [data[i][1] for i in range(len(data))]
+        total = sum(data_count)
+        red = int(sum([int(data[i][0][1:3], 16)*data[i][1] for i in range(len(data))])/total)
+        green = int(sum([int(data[i][0][3:5], 16)*data[i][1] for i in range(len(data))])/total)
+        blue = int(sum([int(data[i][0][5:7], 16)*data[i][1] for i in range(len(data))])/total)
+        pad = lambda c : c if len(c)==2 else '0'+c
+        combine_color = '#'+pad(hex(red)[2:])+pad(hex(green)[2:])+pad(hex(blue)[2:])
+        return combine_color
+    except: print(f'error: combine_hex_color()')
+
+def temp_compare(color_data):
+    try:
+        data = []
+        data.append(color_data)
+        red = int(sum([int(color_data[1][1:3], 16)]))
+        green = int(sum([int(color_data[1][3:5], 16)]))
+        blue = int(sum([int(color_data[1][5:7], 16)]))
+        lst_temp = list(constant.temp_color)
+        if 0 <= red <= 18 and 0 <= green <= 18 and 0 < blue <= 146+18: color_data.append(constant.temp_color[lst_temp[0]])
+        elif 0 <= red <= 18 and 0 <= green <= 18 and 164 < blue <= 182+19: color_data.append(constant.temp_color[lst_temp[1]])
+        elif 0 <= red <= 18 and 0 <= green <= 18 and 201 < blue <= 219+18: color_data.append(constant.temp_color[lst_temp[2]])
+        elif 0 <= red <= 18 and 0 <= green <= 18 and 237 < blue <= 255: color_data.append(constant.temp_color[lst_temp[3]])
+        elif 0 <= red <= 18 and 18 < green <= 36+19 and 237 < blue <= 255: color_data.append(constant.temp_color[lst_temp[4]])
+        elif 0 <= red <= 18 and 55 < green <= 73+18 and 237 < blue <= 255: color_data.append(constant.temp_color[lst_temp[5]])
+        elif 0 <= red <= 18 and 91 < green <= 109+19 and 237 < blue <= 255: color_data.append(constant.temp_color[lst_temp[6]])
+        elif 0 <= red <= 18 and 128 < green <= 146+18 and 237 < blue <= 255: color_data.append(constant.temp_color[lst_temp[7]])
+        elif 0 <= red <= 18 and 164 < green <= 182+19 and 237 < blue <= 255: color_data.append(constant.temp_color[lst_temp[8]])
+        elif 0 <= red <= 18 and 201 < green <= 219+18 and 237 < blue <= 255: color_data.append(constant.temp_color[lst_temp[9]])
+        elif 0 <= red <= 18 and 237 < green <= 255 and 237 < blue <= 255: color_data.append(constant.temp_color[lst_temp[10]])
+        elif 18 < red <= 36+18 and 237 < green <= 255 and 237 >= blue > 219-18: color_data.append(constant.temp_color[lst_temp[11]])
+        elif 54 < red <= 73+18 and 237 < green <= 255 and 201 >= blue > 182-18: color_data.append(constant.temp_color[lst_temp[12]])
+        elif 91 < red <= 109+19 and 237 < green <= 255 and 164 >= blue > 146-19: color_data.append(constant.temp_color[lst_temp[13]])
+        elif 128 < red <= 146+18 and 237 < green <= 255 and 127 >= blue > 109-18: color_data.append(constant.temp_color[lst_temp[14]])
+        elif 164 < red <= 182+19 and 237 < green <= 255 and 91 >= blue > 73-19: color_data.append(constant.temp_color[lst_temp[15]])
+        elif 201 < red <= 219+18 and 237 < green <= 255 and 54 >= blue > 36-18: color_data.append(constant.temp_color[lst_temp[16]])
+        elif 237 < red <= 255 and 237 < green <= 255 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[17]])
+        elif 237 < red <= 255 and 237 >= green > 219-18 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[18]])
+        elif 237 < red <= 255 and 201 >= green > 182-18 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[19]])
+        elif 237 < red <= 255 and 164 >= green > 146-19 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[20]])
+        elif 237 < red <= 255 and 127 >= green > 109-18 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[21]])
+        elif 237 < red <= 255 and 91 >= green > 73-19 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[22]])
+        elif 237 < red <= 255 and 54 >= green > 36-18 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[23]])
+        elif 237 < red <= 255 and 18 >= green >= 0 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[24]])
+        elif 237 >= red > 255-18 and 18 >= green >= 0 and 18 >= blue >= 0: color_data.append(constant.temp_color[lst_temp[25]])
+        elif len(color_data)==2: color_data.append('')
+        rgb = f'{red}, {green}, {blue}'
+        color_data.append(rgb)
+        return color_data
+    except: print(f'error: temp_compare()')
+
+def plotGraph(image, colors, counts):
     f, ax = plt.subplots(1, 2, figsize = (8, 6))
     ax[0].imshow(image)
     ax[1].pie(counts, labels = counts, colors = colors)
@@ -95,11 +147,20 @@ async def get_data():
                         # print(f"Color : {getValueFromKey(colors,'Color')} | Count : {getValueFromKey(colors,'Count')}")
                         # print("sum =",sum(getValueFromKey(colors,'Count')))
                         date = f'{y}-{m}-{d}-{t}'
-                        saveData(date,colors)
+                        await saveData(temp_compare(color_of_temp(date,colors)))
+                        print(f'{date} success!!')
                     except:
                         date_error = f'{y}-{m}-{d}-{t}'
                         print(f'error: {date_error}')
     # plotGraph(modi_img,getValueFromKey(colors,'Color'),getValueFromKey(colors,'Count'))
+
+async def saveData(temp_color):
+    try:
+        wb = load_workbook('./data/temperature_2016.xlsx')
+        ws = wb.worksheets[0]
+        ws.append(temp_color)
+        wb.save('./data/temperature_2016.xlsx')
+    except: print(f'error: saveData()')
 
 def getValueFromKey(array , key): return [i[key] for i in array if key in i]
 
