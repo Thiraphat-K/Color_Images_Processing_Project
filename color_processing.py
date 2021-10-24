@@ -115,7 +115,7 @@ class color_process_temperature():
             elif 240.0 >= h > 234.0 and 44.75 >= l > 41.25: color_data.append(17.0)
             elif 240.0 >= h > 234.0 and 48.25 >= l > 44.75: color_data.append(17.5)
             elif 240.0 >= h > 234.0 and 51.75 >= l > 48.25: color_data.append(18.0)
-            elif 234.0 >= h > 232.0 and 51.75 >= l > 48.25: color_data.append(18.5)
+            elif 234.0 >= h > 232.0: color_data.append(18.5)
             elif 232.0 >= h > 229.75: color_data.append(19.0)
             elif 229.75 >= h > 225.25: color_data.append(19.5)
             elif 225.25 >= h > 220.75: color_data.append(20.0)
@@ -160,8 +160,8 @@ class color_process_temperature():
             elif 2.0 >= h > 0.0 and 44.75 <= l < 48.25: color_data.append(39.5)
             elif 2.0 >= h > 0.0 and 43.0 <= l < 44.75: color_data.append(40.0)
             elif len(color_data)==2: color_data.append('')
-            rgb = f'{red}, {green}, {blue}'
-            color_data.append(rgb)
+            # rgb = f'{red}, {green}, {blue}'
+            # color_data.append(rgb)
             return color_data
         except: print(f'error: temp_compare()')
 
@@ -175,32 +175,42 @@ class color_process_temperature():
         # plt.show()
 
     async def get_data(self):
+        data_lst = []
+        temp_lst = []
         for y in constant.YEAR:
             for m in constant.MONTH:
                 for d in constant.DAY:
-                    for t in constant.TIME:
-                        try:
-                            url_img = f"http://tiwrmdev.hii.or.th/ContourImg/{y}/{m}/{d}/hatempY{y}M{m}D{d}T{t}.png"
-                            response = urllib.request.urlopen(url_img)
-                            # print("downloading : %s success!!" % url_img)
-                            image = self.get_image(response)
-                            colors, modi_img = self.get_colors(image, 8)
-                            colors = self.deleteItem(colors)
-                            # print(f"Color : {self.getValueFromKey(colors,'Color')} | Count : {self.getValueFromKey(colors,'Count')}")
-                            # print("sum =",sum(self.getValueFromKey(colors,'Count')))
-                            date = f'{y}-{m}-{d}-{t}'
-                            await self.saveData(self.temp_compare(self.color_of_temp(date,colors)))
-                            print(f'{date} success!!')
-                        except:
-                            date_error = f'{y}-{m}-{d}-{t}'
-                            print(f'error: {date_error}')
+                    try:
+                        temp_lst.clear()
+                        for t in constant.TIME:
+                            data_lst.clear()
+                            try:
+                                url_img = f"http://tiwrmdev.hii.or.th/ContourImg/{y}/{m}/{d}/hatempY{y}M{m}D{d}T{t}.png"
+                                response = urllib.request.urlopen(url_img)
+                                # print("downloading : %s success!!" % url_img)
+                                image = self.get_image(response)
+                                colors, modi_img = self.get_colors(image, 8)
+                                colors = self.deleteItem(colors)
+                                # print(f"Color : {self.getValueFromKey(colors,'Color')} | Count : {self.getValueFromKey(colors,'Count')}")
+                                # print("sum =",sum(self.getValueFromKey(colors,'Count')))
+                                date = f'{y}-{m}-{d}-{t}'
+                                temp_lst.append((self.temp_compare(self.color_of_temp(date,colors)))[2])
+                            except:
+                                print(f'error: call_url')
+                        date = f'{y}-{m}-{d}'
+                        data_lst.append(date)
+                        count_temp = float(f'{sum(temp_lst)/len(temp_lst):.1f}')
+                        data_lst.append(count_temp)
+                        await self.saveData(data_lst)
+                        print(f'{date} completed!')
+                    except: print(f'{date} failed~')
         # self.plotGraph(modi_img,self.getValueFromKey(colors,'Color'),self.getValueFromKey(colors,'Count'))
 
-    async def saveData(self, temp_color):
+    async def saveData(self, temp_data):
         try:
             wb = load_workbook('./data/temperature_2016.xlsx')
             ws = wb.worksheets[0]
-            ws.append(temp_color)
+            ws.append(temp_data)
             wb.save('./data/temperature_2016.xlsx')
         except: print(f'error: saveData()')
 

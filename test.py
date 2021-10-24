@@ -160,8 +160,8 @@ class test():
             elif 2.0 >= h > 0.0 and 44.75 <= l < 48.25: color_data.append(39.5)
             elif 2.0 >= h > 0.0 and 43.0 <= l < 44.75: color_data.append(40.0)
             elif len(color_data)==2: color_data.append('')
-            rgb = f'{red}, {green}, {blue}'
-            color_data.append(rgb)
+            # rgb = f'{red}, {green}, {blue}'
+            # color_data.append(rgb)
             return color_data
         except: print(f'error: temp_compare()')
 
@@ -175,10 +175,14 @@ class test():
         # plt.show()
 
     async def get_data(self):
+        data_lst = []
+        temp_lst = []
         for y in constant.YEAR:
             for m in constant.MONTH:
                 for d in constant.DAY:
+                    temp_lst.clear()
                     for t in constant.TIME:
+                        data_lst.clear()
                         try:
                             url_img = f"http://tiwrmdev.hii.or.th/ContourImg/{y}/{m}/{d}/hatempY{y}M{m}D{d}T{t}.png"
                             response = urllib.request.urlopen(url_img)
@@ -189,12 +193,19 @@ class test():
                             # print(f"Color : {self.getValueFromKey(colors,'Color')} | Count : {self.getValueFromKey(colors,'Count')}")
                             # print("sum =",sum(self.getValueFromKey(colors,'Count')))
                             date = f'{y}-{m}-{d}-{t}'
-                            print(self.temp_compare(self.color_of_temp(date,colors)))
+                            # print(self.temp_compare(self.color_of_temp(date,colors)))
+                            temp_lst.append((self.temp_compare(self.color_of_temp(date,colors)))[2])
                             # await self.saveData(self.temp_compare(self.color_of_temp(date,colors)))
                             # print(f'{date} success!!')
                         except:
                             date_error = f'{y}-{m}-{d}-{t}'
                             print(f'error: {date_error}')
+                    date = f'{y}-{m}-{d}'
+                    data_lst.append(date)
+                    count_temp = float(f'{sum(temp_lst)/len(temp_lst):.1f}')
+                    data_lst.append(count_temp)
+                    print(data_lst)
+                    print(temp_lst)
         # self.plotGraph(modi_img,self.getValueFromKey(colors,'Color'),self.getValueFromKey(colors,'Count'))
 
     async def saveData(self, temp_color):
