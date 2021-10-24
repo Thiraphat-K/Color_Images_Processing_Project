@@ -8,7 +8,7 @@ import collections
 from until import constant
 from openpyxl import load_workbook
 
-class test():
+class color_process_temperature():
     def RGB2HEX(self, color):
         return "#{:02x}{:02x}{:02x}".format(int(color[0]), int(color[1]), int(color[2]))
 
@@ -189,9 +189,8 @@ class test():
                             # print(f"Color : {self.getValueFromKey(colors,'Color')} | Count : {self.getValueFromKey(colors,'Count')}")
                             # print("sum =",sum(self.getValueFromKey(colors,'Count')))
                             date = f'{y}-{m}-{d}-{t}'
-                            print(self.temp_compare(self.color_of_temp(date,colors)))
-                            # await self.saveData(self.temp_compare(self.color_of_temp(date,colors)))
-                            # print(f'{date} success!!')
+                            await self.saveData(self.temp_compare(self.color_of_temp(date,colors)))
+                            print(f'{date} success!!')
                         except:
                             date_error = f'{y}-{m}-{d}-{t}'
                             print(f'error: {date_error}')
