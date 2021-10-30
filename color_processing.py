@@ -29,19 +29,19 @@ class color_process_temperature():
         return crop_img
 
     def get_colors(self, image, number_of_colors):
-        modi_img = self.center_crop(image, (270, 175, 165, 186))
-        modified_image = modi_img.reshape(modi_img.shape[0]*modi_img.shape[1], modi_img.shape[2]) #reshape 2D matrix to 3D matrix
-        clf = KMeans(n_clusters = number_of_colors)
-        labels = clf.fit_predict(modified_image)
+        img = self.center_crop(image, (270, 175, 165, 186))
+        modified_image = img.reshape(img.shape[0]*img.shape[1], img.shape[2]) #reshape to 2D matrix
+
+        k_means = KMeans(n_clusters = number_of_colors)
+        labels = k_means.fit_predict(modified_image)
         counts_df = Counter(labels)
-            # sort to ensure correct color percentage 
+        center_colors = k_means.cluster_centers_
+
         counts = collections.OrderedDict(sorted(counts_df.items()))
-        center_colors = clf.cluster_centers_
-            # We get ordered colors by iterating through the keys
         ordered_colors = [center_colors[i] for i in counts]
         hex_colors = [self.RGB2HEX(ordered_colors[i]) for i in counts]
         # rgb_colors = [ordered_colors[i] for i in counts]
-        return list(map(lambda h, c: {"Color":h , "Count":c }, hex_colors , counts.values())), modi_img
+        return list(map(lambda h, c: {"Color":h , "Count":c }, hex_colors , counts.values())), img
 
     def color_of_temp(self, date, color_data):
         try:
@@ -156,9 +156,9 @@ class color_process_temperature():
             elif 14.75 >= h > 10.25: color_data.append(37.5)
             elif 10.25 >= h > 6.0: color_data.append(38.0)
             elif 6.0 >= h > 2.0: color_data.append(38.5)
-            elif 2.0 >= h > 0.0 and 48.25 <= l < 51.75: color_data.append(39.0)
-            elif 2.0 >= h > 0.0 and 44.75 <= l < 48.25: color_data.append(39.5)
-            elif 2.0 >= h > 0.0 and 43.0 <= l < 44.75: color_data.append(40.0)
+            elif 2.0 >= h >= 0.0 and 48.25 <= l < 51.75: color_data.append(39.0)
+            elif 2.0 >= h >= 0.0 and 44.75 <= l < 48.25: color_data.append(39.5)
+            elif 2.0 >= h >= 0.0 and 30.0 <= l < 44.75: color_data.append(40.0)
             elif len(color_data)==2: color_data.append('')
             # rgb = f'{red}, {green}, {blue}'
             # color_data.append(rgb)
@@ -189,14 +189,15 @@ class color_process_temperature():
                                 response = urllib.request.urlopen(url_img)
                                 # print("downloading : %s success!!" % url_img)
                                 image = self.get_image(response)
-                                colors, modi_img = self.get_colors(image, 8)
+                                colors, img = self.get_colors(image, 8)
                                 colors = self.deleteItem(colors)
                                 # print(f"Color : {self.getValueFromKey(colors,'Color')} | Count : {self.getValueFromKey(colors,'Count')}")
                                 # print("sum =",sum(self.getValueFromKey(colors,'Count')))
                                 date = f'{y}-{m}-{d}-{t}'
+                                # print(self.temp_compare(self.color_of_temp(date,colors)))
                                 temp_lst.append((self.temp_compare(self.color_of_temp(date,colors)))[2])
                             except:
-                                print(f'error: call_url')
+                                print(f'error time {t}.00 : call_url')
                         date = f'{y}-{m}-{d}'
                         data_lst.append(date)
                         count_temp = float(f'{sum(temp_lst)/len(temp_lst):.1f}')
@@ -204,14 +205,14 @@ class color_process_temperature():
                         await self.saveData(data_lst)
                         print(f'{date} completed!')
                     except: print(f'{date} failed~')
-        # self.plotGraph(modi_img,self.getValueFromKey(colors,'Color'),self.getValueFromKey(colors,'Count'))
+        # self.plotGraph(img,self.getValueFromKey(colors,'Color'),self.getValueFromKey(colors,'Count'))
 
     async def saveData(self, temp_data):
         try:
-            wb = load_workbook('./data/temperature_2016.xlsx')
-            ws = wb.worksheets[0]
+            wb = load_workbook('./data/temperature_2016_to_2018.xlsx')
+            ws = wb.worksheets[2]
             ws.append(temp_data)
-            wb.save('./data/temperature_2016.xlsx')
+            wb.save('./data/temperature_2016_to_2018.xlsx')
         except: print(f'error: saveData()')
 
     def getValueFromKey(self, array , key): return [i[key] for i in array if key in i]
