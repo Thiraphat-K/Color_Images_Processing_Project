@@ -25,11 +25,19 @@ class color_process_temperature():
         # crop_height = dim[1] if dim[1]<img.shape[0] else img.shape[0] # check height
         mid_x, mid_y = int(width/2), int(height/2)
         # cw2, ch2 = int(crop_width/2), int(crop_height/2) # crop x,y stable
-        crop_img = img[mid_y-dim[0]:mid_y+dim[1], mid_x-dim[2]:mid_x+dim[3]]
+        # crop_img = img[mid_y-dim[0]:mid_y+dim[1], mid_x-dim[2]:mid_x+dim[3]] #Thailand
+        crop_img = img[dim[0]:dim[1], dim[2]:dim[3]] #locals in Thailand
         return crop_img
 
     def get_colors(self, image, number_of_colors):
-        img = self.center_crop(image, (270, 175, 165, 186))
+        # img = self.center_crop(image, (270, 175, 165, 186)) #Thailand
+        img = self.center_crop(image, (33, 164, 54, 210)) #North
+        # img = self.center_crop(image, (139, 310, 117, 225)) #Central
+        # img = self.center_crop(image, (274, 366, 188, 270)) #East
+        # img = self.center_crop(image, (138, 405, 67, 170)) #West
+        # img = self.center_crop(image, (406, 619, 85, 240)) #Sount
+        # img = self.center_crop(image, (114, 284, 211, 380)) #NorthEast
+
         modified_image = img.reshape(img.shape[0]*img.shape[1], img.shape[2]) #reshape to 2D matrix
 
         k_means = KMeans(n_clusters = number_of_colors)
@@ -43,9 +51,17 @@ class color_process_temperature():
         # rgb_colors = [ordered_colors[i] for i in counts]
         return list(map(lambda h, c: {"Color":h , "Count":c }, hex_colors , counts.values())), img
 
+    async def saveData(self, temp_data):
+        try:
+            wb = load_workbook('./data/')
+            ws = wb.worksheets[0]
+            ws.append(temp_data)
+            wb.save('./data/temperature_2016_to_2018.xlsx')
+        except: print(f'error: saveData()')
+
     def color_of_temp(self, date, color_data):
         try:
-            color_data[-1]["Date"] = date
+            color_data = sorted(color_data, key=lambda k:k['Count'])
             count_colors = 0
             data = []
             for i in range(len(color_data)):
@@ -53,6 +69,7 @@ class color_process_temperature():
                 for c in constant.rm_color:
                     if color_data[i]["Color"].find(c) != -1: remove_color = True
                 if not remove_color: data.append(list(color_data[i].values()))
+            data[-1].append(date)
             for n in data:count_colors += n[1]
             if data[-1][2] == date :
                 for d in data:
@@ -172,7 +189,7 @@ class color_process_temperature():
         ax[0].axis('off') #hide the axis
         ax[1].axis('off')
         f.tight_layout()
-        # plt.show()
+        plt.show()
 
     async def get_data(self):
         data_lst = []
@@ -190,7 +207,6 @@ class color_process_temperature():
                                 # print("downloading : %s success!!" % url_img)
                                 image = self.get_image(response)
                                 colors, img = self.get_colors(image, 8)
-                                colors = self.deleteItem(colors)
                                 # print(f"Color : {self.getValueFromKey(colors,'Color')} | Count : {self.getValueFromKey(colors,'Count')}")
                                 # print("sum =",sum(self.getValueFromKey(colors,'Count')))
                                 date = f'{y}-{m}-{d}-{t}'
@@ -207,20 +223,4 @@ class color_process_temperature():
                     except: print(f'{date} failed~')
         # self.plotGraph(img,self.getValueFromKey(colors,'Color'),self.getValueFromKey(colors,'Count'))
 
-    async def saveData(self, temp_data):
-        try:
-            wb = load_workbook('./data/temperature_2016_to_2018.xlsx')
-            ws = wb.worksheets[2]
-            ws.append(temp_data)
-            wb.save('./data/temperature_2016_to_2018.xlsx')
-        except: print(f'error: saveData()')
-
     def getValueFromKey(self, array , key): return [i[key] for i in array if key in i]
-
-    def deleteItem(self, colors_l):
-        colors_l = sorted(colors_l, key=lambda k:k['Count'])
-        del_I = lambda c : c ['Color'] in ['#fefefe']
-        for i in range(len(colors_l)):
-            if del_I(colors_l[i]):
-                colors_l.pop(i)
-        return colors_l
