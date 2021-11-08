@@ -31,11 +31,12 @@ class color_process_temperature():
 
     def get_colors(self, image, number_of_colors):
         # img = self.center_crop(image, (270, 175, 165, 186)) #Thailand
+
         img = self.center_crop(image, (33, 164, 54, 210)) #North
         # img = self.center_crop(image, (139, 310, 117, 225)) #Central
         # img = self.center_crop(image, (274, 366, 188, 270)) #East
         # img = self.center_crop(image, (138, 405, 67, 170)) #West
-        # img = self.center_crop(image, (406, 619, 85, 240)) #Sount
+        # img = self.center_crop(image, (406, 619, 85, 240)) #South
         # img = self.center_crop(image, (114, 284, 211, 380)) #NorthEast
 
         modified_image = img.reshape(img.shape[0]*img.shape[1], img.shape[2]) #reshape to 2D matrix
@@ -53,10 +54,10 @@ class color_process_temperature():
 
     async def saveData(self, temp_data):
         try:
-            wb = load_workbook('./data/')
+            wb = load_workbook('./data/temperature_zones_2016.xlsx')
             ws = wb.worksheets[0]
             ws.append(temp_data)
-            wb.save('./data/temperature_2016_to_2018.xlsx')
+            wb.save('./data/temperature_zones_2016.xlsx')
         except: print(f'error: saveData()')
 
     def color_of_temp(self, date, color_data):
@@ -125,7 +126,7 @@ class color_process_temperature():
             blue = int(sum([int(color_data[1][5:7], 16)]))
             h = (self.rgb_to_hsl(red, green, blue))[0]
             l = (self.rgb_to_hsl(red, green, blue))[1]
-            if 240.0 >= h > 234.0 and 30.75 >= l >= 29.0: color_data.append(15.0)
+            if 240.0 >= h > 234.0 and 30.75 >= l >= 0: color_data.append(15.0)
             elif 240.0 >= h > 234.0 and 34.25 >= l > 30.75: color_data.append(15.5)
             elif 240.0 >= h > 234.0 and 37.75 >= l > 34.25: color_data.append(16.0)
             elif 240.0 >= h > 234.0 and 41.25 >= l > 37.75: color_data.append(16.5)
